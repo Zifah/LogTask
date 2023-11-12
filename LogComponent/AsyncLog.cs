@@ -15,7 +15,7 @@
         private bool _quitWithFlush = false;
         DateTime _curDate = DateTime.Now;
 
-        private string LogFilePath => @$"{LogFolder}\Log" + _curDate.ToString("yyyyMMdd HHmmss fff") + ".log";
+        private string LogFilePath => Path.Combine(LogFolder, $"Log{_curDate:yyyyMMdd HHmmss fff}.log");
         private StreamWriter GetWriter
         {
             get
@@ -41,7 +41,6 @@
             {
                 File.WriteAllText(LogFilePath,
                "Timestamp".PadRight(25, ' ') + '\t' + "Data".PadRight(15, ' ') + '\t' + Environment.NewLine);
-
             }
         }
 
