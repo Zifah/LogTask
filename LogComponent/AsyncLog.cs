@@ -1,6 +1,8 @@
 ﻿namespace LogTest
 {
     using System;
+    using System.Collections.Concurrent;
+
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
@@ -9,25 +11,25 @@
     public class AsyncLog : ILog
     {
         private Thread _runThread;
-        private List<LogLine> _lines = new List<LogLine>();
+        private ConcurrentQueue<LogLine> _lines = new ConcurrentQueue<LogLine>();
 
-        private StreamWriter _writer; 
+        private StreamWriter _writer;
 
         private bool _exit;
 
         public AsyncLog()
         {
-            if (!Directory.Exists(@"C:\LogTest")) 
+            if (!Directory.Exists(@"C:\LogTest"))
                 Directory.CreateDirectory(@"C:\LogTest");
 
-            this._writer = File.AppendText(@"C:\LogTest\Log" + DateTime.Now.ToString("yyyyMMdd HHmmss fff") + ".log");
-            
-            this._writer.Write("Timestamp".PadRight(25, ' ') + "\t" + "Data".PadRight(15, ' ') + "\t" + Environment.NewLine);
+            _writer = File.AppendText(@"C:\LogTest\Log" + DateTime.Now.ToString("yyyyMMdd HHmmss fff") + ".log");
 
-            this._writer.AutoFlush = true;
+            _writer.Write("Timestamp".PadRight(25, ' ') + "\t" + "Data".PadRight(15, ' ') + "\t" + Environment.NewLine);
 
-            this._runThread = new Thread(this.MainLoop);
-            this._runThread.Start();
+            _writer.AutoFlush = true;
+
+            _runThread = new Thread(MainLoop);
+            _runThread.Start();
         }
 
         private bool _QuitWithFlush = false;
@@ -37,78 +39,70 @@
 
         private void MainLoop()
         {
-            while (!this._exit)
+            while (!_exit)
             {
-                if (this._lines.Count > 0)
+                int maxWritesPerBatch = 5;
+
+                while (maxWritesPerBatch > 0)
                 {
-                    int f = 0;
-                    List<LogLine> _handled = new List<LogLine>();
-
-                    foreach (LogLine logLine in this._lines)
+                    maxWritesPerBatch--; // TODO Hafiz: Why do we have this here?
+                    var hasLog = _lines.TryPeek(out var logLine);
+                    if (!hasLog || logLine == null || _exit)
                     {
-                        f++;
-
-                        if (f > 5)
-                            continue;
-                        
-                        if (!this._exit || this._QuitWithFlush)
-                        {
-                            _handled.Add(logLine);
-
-                            StringBuilder stringBuilder = new StringBuilder();
-
-                            if ((DateTime.Now - _curDate).Days != 0)
-                            {
-                                _curDate = DateTime.Now;
-
-                                this._writer = File.AppendText(@"C:\LogTest\Log" + DateTime.Now.ToString("yyyyMMdd HHmmss fff") + ".log");
-
-                                this._writer.Write("Timestamp".PadRight(25, ' ') + "\t" + "Data".PadRight(15, ' ') + "\t" + Environment.NewLine);
-
-                                stringBuilder.Append(Environment.NewLine);
-
-                                this._writer.Write(stringBuilder.ToString());
-
-                                this._writer.AutoFlush = true;
-                            }
-
-                            stringBuilder.Append(logLine.Timestamp.ToString("yyyy-MM-dd HH:mm:ss:fff"));
-                            stringBuilder.Append("\t");
-                            stringBuilder.Append(logLine.LineText());
-                            stringBuilder.Append("\t");
-
-                            stringBuilder.Append(Environment.NewLine);
-
-                            this._writer.Write(stringBuilder.ToString());
-                        }
+                        continue;
                     }
 
-                    for (int y = 0; y < _handled.Count; y++)
+                    StringBuilder stringBuilder = new();
+
+                    if ((DateTime.Now - _curDate).Days != 0) // TODO Hafiz: Verify the correctness of this calculation
                     {
-                        this._lines.Remove(_handled[y]);   
+                        _curDate = DateTime.Now;
+
+                        _writer = File.AppendText(@"C:\LogTest\Log" + DateTime.Now.ToString("yyyyMMdd HHmmss fff") + ".log");
+
+                        _writer.Write("Timestamp".PadRight(25, ' ') + "\t" + "Data".PadRight(15, ' ') + "\t" + Environment.NewLine);
+
+                        stringBuilder.Append(Environment.NewLine);
+
+                        _writer.Write(stringBuilder.ToString());
+
+                        _writer.AutoFlush = true;
                     }
 
-                    if (this._QuitWithFlush == true && this._lines.Count == 0) 
-                        this._exit = true;
+                    stringBuilder.Append(logLine.Timestamp.ToString("yyyy-MM-dd HH:mm:ss:fff"));
+                    stringBuilder.Append('\t');
+                    stringBuilder.Append(logLine.LineText());
+                    stringBuilder.Append('\t');
 
-                    Thread.Sleep(50);
+                    stringBuilder.Append(Environment.NewLine);
+
+                    _writer.Write(stringBuilder.ToString());
+                    _lines.TryDequeue(out _);
+                    // We can be sure that the last peeked item is the one we're dequeuing since only one thread dequeues from the queue
+                    // We also ensure to dequeue from the log only after we have written the log entry
                 }
+
+
+                if (_QuitWithFlush == true && _lines.Count == 0)
+                    _exit = true;
+
+                Thread.Sleep(50);
             }
         }
 
         public void StopWithoutFlush()
         {
-            this._exit = true;
+            _exit = true;
         }
 
         public void StopWithFlush()
         {
-            this._QuitWithFlush = true;
+            _QuitWithFlush = true;
         }
 
         public void Write(string text)
         {
-            this._lines.Add(new LogLine() { Text = text, Timestamp = DateTime.Now });
+            _lines.Enqueue(new LogLine() { Text = text, Timestamp = DateTime.Now });
         }
     }
 }
