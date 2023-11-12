@@ -41,13 +41,15 @@
         {
             while (!_exit)
             {
+                // TODO Hafiz: Open the file
                 int maxWritesPerBatch = 5;
 
-                while (maxWritesPerBatch > 0)
+                while (!_exit && maxWritesPerBatch > 0)
                 {
                     maxWritesPerBatch--; // TODO Hafiz: Why do we have this here?
                     var hasLog = _lines.TryPeek(out var logLine);
-                    if (!hasLog || logLine == null || _exit)
+
+                    if (!hasLog || logLine == null)
                     {
                         continue;
                     }
@@ -76,6 +78,10 @@
 
                     stringBuilder.Append(Environment.NewLine);
 
+                    if (_exit)
+                    {
+                        break;
+                    }
                     _writer.Write(stringBuilder.ToString());
                     _lines.TryDequeue(out _);
                     // We can be sure that the last peeked item is the one we're dequeuing since only one thread dequeues from the queue
