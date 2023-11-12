@@ -31,7 +31,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LogTest\LogComponent.csproj">
+    <ProjectReference Include="..\LogComponent\LogComponent.csproj">
       <Project>{EE0CC7D7-A1A0-4A16-80E5-8B80B480EB47}</Project>
       <Name>LogComponent</Name>
     </ProjectReference>
