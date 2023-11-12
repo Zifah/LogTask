@@ -2,40 +2,59 @@
 {
     using System;
     using System.Collections.Concurrent;
-
-    using System.Collections.Generic;
     using System.IO;
     using System.Text;
     using System.Threading;
 
     public class AsyncLog : ILog
     {
-        private Thread _runThread;
-        private ConcurrentQueue<LogLine> _lines = new ConcurrentQueue<LogLine>();
-
-        private StreamWriter _writer;
-
+        private readonly Thread _runThread;
+        private readonly ConcurrentQueue<LogLine> _lines = new ConcurrentQueue<LogLine>();
+        private const string LogFolder = @"C:\LogTest";
         private bool _exit;
+        private bool _quitWithFlush = false;
+        DateTime _curDate = DateTime.Now;
+
+        private string LogFilePath => @$"{LogFolder}\Log" + _curDate.ToString("yyyyMMdd HHmmss fff") + ".log";
+        private StreamWriter GetWriter
+        {
+            get
+            {
+                EnsureFileRollOver();
+                return File.AppendText(LogFilePath);
+            }
+        }
+
+        private void EnsureFileRollOver()
+        {
+            if (DateTime.Now.Day > _curDate.Day)
+            {
+                _curDate = DateTime.Now;
+                InitializeLogFile();
+            }
+
+        }
+
+        private void InitializeLogFile()
+        {
+            if (!File.Exists(LogFilePath))
+            {
+                File.WriteAllText(LogFilePath,
+               "Timestamp".PadRight(25, ' ') + '\t' + "Data".PadRight(15, ' ') + '\t' + Environment.NewLine);
+
+            }
+        }
 
         public AsyncLog()
         {
-            if (!Directory.Exists(@"C:\LogTest"))
-                Directory.CreateDirectory(@"C:\LogTest");
+            if (!Directory.Exists(LogFolder))
+                Directory.CreateDirectory(LogFolder);
 
-            _writer = File.AppendText(@"C:\LogTest\Log" + DateTime.Now.ToString("yyyyMMdd HHmmss fff") + ".log");
-
-            _writer.Write("Timestamp".PadRight(25, ' ') + "\t" + "Data".PadRight(15, ' ') + "\t" + Environment.NewLine);
-
-            _writer.AutoFlush = true;
+            InitializeLogFile();
 
             _runThread = new Thread(MainLoop);
             _runThread.Start();
         }
-
-        private bool _QuitWithFlush = false;
-
-
-        DateTime _curDate = DateTime.Now;
 
         private void MainLoop()
         {
@@ -44,56 +63,51 @@
                 // TODO Hafiz: Open the file
                 int maxWritesPerBatch = 5;
 
-                while (!_exit && maxWritesPerBatch > 0)
+                using (var writer = GetWriter)
                 {
-                    maxWritesPerBatch--; // TODO Hafiz: Why do we have this here?
-                    var hasLog = _lines.TryPeek(out var logLine);
-
-                    if (!hasLog || logLine == null)
+                    writer.AutoFlush = true;
+                    while (maxWritesPerBatch > 0)
                     {
-                        continue;
+                        maxWritesPerBatch--;
+                        var hasLog = _lines.TryPeek(out var logLine);
+
+                        if (!hasLog)
+                        {
+                            continue;
+                        }
+
+                        if (logLine == null)
+                        {
+                            // Prevent null reference exceptions
+                            _lines.TryDequeue(out _);
+                            continue;
+                        }
+
+                        if (_exit)
+                        {
+                            break;
+                        }
+                        writer.Write(BuildLogLine(logLine.Timestamp, logLine.LineText()).ToString());
+                        _lines.TryDequeue(out _);
+                        // We can be sure that the last peeked item is the one we're dequeuing since only one thread dequeues from the queue
+                        // We also ensure to dequeue from the log only after we have written the log entry
                     }
-
-                    StringBuilder stringBuilder = new();
-
-                    if ((DateTime.Now - _curDate).Days != 0) // TODO Hafiz: Verify the correctness of this calculation
-                    {
-                        _curDate = DateTime.Now;
-
-                        _writer = File.AppendText(@"C:\LogTest\Log" + DateTime.Now.ToString("yyyyMMdd HHmmss fff") + ".log");
-
-                        _writer.Write("Timestamp".PadRight(25, ' ') + "\t" + "Data".PadRight(15, ' ') + "\t" + Environment.NewLine);
-
-                        stringBuilder.Append(Environment.NewLine);
-
-                        _writer.Write(stringBuilder.ToString());
-
-                        _writer.AutoFlush = true;
-                    }
-
-                    stringBuilder.Append(logLine.Timestamp.ToString("yyyy-MM-dd HH:mm:ss:fff"));
-                    stringBuilder.Append('\t');
-                    stringBuilder.Append(logLine.LineText());
-                    stringBuilder.Append('\t');
-
-                    stringBuilder.Append(Environment.NewLine);
-
-                    if (_exit)
-                    {
-                        break;
-                    }
-                    _writer.Write(stringBuilder.ToString());
-                    _lines.TryDequeue(out _);
-                    // We can be sure that the last peeked item is the one we're dequeuing since only one thread dequeues from the queue
-                    // We also ensure to dequeue from the log only after we have written the log entry
                 }
 
-
-                if (_QuitWithFlush == true && _lines.Count == 0)
-                    _exit = true;
-
+                _exit = _exit || (_quitWithFlush == true && _lines.IsEmpty);
                 Thread.Sleep(50);
             }
+        }
+
+        private static StringBuilder BuildLogLine(DateTime timestamp, string lineText)
+        {
+            StringBuilder stringBuilder = new();
+            stringBuilder.Append(timestamp.ToString("yyyy-MM-dd HH:mm:ss:fff"));
+            stringBuilder.Append('\t');
+            stringBuilder.Append(lineText);
+            stringBuilder.Append('\t');
+            stringBuilder.Append(Environment.NewLine);
+            return stringBuilder;
         }
 
         public void StopWithoutFlush()
@@ -103,7 +117,7 @@
 
         public void StopWithFlush()
         {
-            _QuitWithFlush = true;
+            _quitWithFlush = true;
         }
 
         public void Write(string text)
