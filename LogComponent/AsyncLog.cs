@@ -60,26 +60,23 @@
         {
             while (!_exit)
             {
-                // TODO Hafiz: Open the file
-                int maxWritesPerBatch = 5;
-
                 using (var writer = GetWriter)
                 {
                     writer.AutoFlush = true;
-                    while (maxWritesPerBatch > 0)
+                    for (int i = 0; i < 5; i++)
                     {
-                        maxWritesPerBatch--;
                         var hasLog = _lines.TryPeek(out var logLine);
 
                         if (!hasLog)
                         {
-                            continue;
+                            break;
                         }
 
                         if (logLine == null)
                         {
                             // Prevent null reference exceptions
                             _lines.TryDequeue(out _);
+                            Write("Found null log entry 😱");
                             continue;
                         }
 
