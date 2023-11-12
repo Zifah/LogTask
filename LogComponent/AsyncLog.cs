@@ -86,7 +86,7 @@
                         }
                         writer.Write(BuildLogLine(logLine.Timestamp, logLine.LineText()).ToString());
                         _lines.TryDequeue(out _);
-                        // We can be sure that the last peeked item is the one we're dequeuing since only one thread dequeues from the queue
+                        // We can be sure that the last peeked item is the one we're dequeuing since only this thread dequeues
                         // We also ensure to dequeue from the log only after we have written the log entry
                     }
                 }
