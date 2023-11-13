@@ -34,7 +34,6 @@ namespace LogComponent
         public void Write(string logText)
         {
             using var writer = Writer;
-            writer.AutoFlush = true;
             writer.Write(logText);
         }
 
