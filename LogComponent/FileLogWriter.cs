@@ -13,7 +13,7 @@ namespace LogComponent
 
         private DateTime _curDate;
         private const string LogFolder = @"C:\LogTest";
-        private const int WriterIdleTimeoutMs = 5;
+        private const int WriterIdleTimeoutMs = 100;
         private string LogFilePath => Path.Combine(LogFolder, $"Log{_curDate:yyyyMMdd HHmmss fff}.log");
 
         /// <summary>
