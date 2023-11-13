@@ -1,9 +1,5 @@
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading;
 
 namespace LogComponent
 {
@@ -13,7 +9,6 @@ namespace LogComponent
 
         private DateTime _curDate;
         private const string LogFolder = @"C:\LogTest";
-        private const int WriterIdleTimeoutMs = 100;
         private string LogFilePath => Path.Combine(LogFolder, $"Log{_curDate:yyyyMMdd HHmmss fff}.log");
 
         /// <summary>
