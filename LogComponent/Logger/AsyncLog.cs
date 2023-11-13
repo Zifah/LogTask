@@ -89,15 +89,20 @@
                 catch (Exception ex)
                 {
                     exceptionCount++;
-                    if (exceptionCount > _maxConsecutiveExceptions)
-                    {
-                        StopWithoutFlush();
-                    }
-                    else
-                    {
-                        Write($"An {ex.GetType()} exception occurred; Message: {ex.Message}");
-                    }
+                    LogExceptionOrPreventOverflow(ex, exceptionCount);
                 }
+            }
+        }
+
+        private void LogExceptionOrPreventOverflow(Exception ex, int exceptionCount)
+        {
+            if (exceptionCount > _maxConsecutiveExceptions)
+            {
+                StopWithoutFlush();
+            }
+            else
+            {
+                Write($"An {ex.GetType()} exception occurred; Message: {ex.Message}");
             }
         }
 
