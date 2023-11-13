@@ -1,37 +1,44 @@
 ﻿using System;
+using Microsoft.Extensions.Configuration;
 
-namespace LogUsers
+namespace Application
 {
-    using System.Threading;
-
-    using LogComponent;
+    using System.IO;
+    using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Hosting;
 
     class Program
     {
         static void Main(string[] args)
         {
-            var clock = new RealClock();
-            ILog logger = new AsyncLog(new FileLogWriter(clock), clock);
+            var host = new HostBuilder()
+                        .ConfigureHostConfiguration(configHost =>
+                                    {
+                                        configHost.SetBasePath(Directory.GetCurrentDirectory());
+                                        configHost.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+                                    })
+                        .ConfigureServices((hostContext, services) =>
+                        {
+                            new Startup(hostContext.Configuration).ConfigureServices(services);
+                        })
+                        .Build();
 
-            for (int i = 0; i < 15; i++)
+            using (var serviceScope = host.Services.CreateScope())
             {
-                logger.Write("Number with Flush: " + i.ToString());
-                Thread.Sleep(50);
+                var services = serviceScope.ServiceProvider;
+                try
+                {
+                    var myService = services.GetRequiredService<MyService>();
+                    myService.Run();
+                }
+                catch (Exception ex)
+                {
+                    // Handle exceptions as needed
+                    Console.WriteLine($"Error: {ex.Message}");
+                }
             }
 
-            logger.StopWithFlush();
-
-            ILog logger2 = new AsyncLog(new FileLogWriter(clock), clock);
-
-            for (int i = 50; i > 0; i--)
-            {
-                logger2.Write("Number with No flush: " + i.ToString());
-                Thread.Sleep(20);
-            }
-
-            logger2.StopWithoutFlush();
-
-            Console.ReadLine();
+            host.Run();
         }
     }
 }

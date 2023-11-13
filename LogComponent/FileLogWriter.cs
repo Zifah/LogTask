@@ -8,16 +8,20 @@ namespace LogComponent
         private readonly IClock _clock;
 
         private DateTime _curDate;
-        private const string LogFolder = @"C:\LogTest";
-        private string LogFilePath => Path.Combine(LogFolder, $"Log{_curDate:yyyyMMdd HHmmss fff}.log");
+        private readonly string _logFolder;
+        private string LogFilePath => Path.Combine(_logFolder, $"Log{_curDate:yyyyMMdd HHmmss fff}.log");
         private static readonly object _lockObject = new();
-        public FileLogWriter(IClock clock)
+        public FileLogWriter(IClock clock, string logFolder)
         {
+            Require.NotNull(clock, nameof(clock));
+            Require.NotNull(logFolder, nameof(logFolder));
             _clock = clock;
             _curDate = _clock.CurrentTime;
 
-            if (!Directory.Exists(LogFolder))
-                Directory.CreateDirectory(LogFolder);
+            if (!Directory.Exists(logFolder))
+                Directory.CreateDirectory(logFolder);
+
+            _logFolder = logFolder;
             InitializeLogFile();
         }
 

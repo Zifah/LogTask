@@ -16,6 +16,9 @@
 
         public AsyncLog(ILogWriter logWriter, IClock clock)
         {
+            Require.NotNull(clock, nameof(clock));
+            Require.NotNull(logWriter, nameof(logWriter));
+
             _clock = clock;
             _logWriter = logWriter;
             _runThread = new Thread(MainLoop);
