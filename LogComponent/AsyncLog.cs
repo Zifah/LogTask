@@ -21,6 +21,24 @@
             _runThread.Start();
         }
 
+        private static StringBuilder BuildLogLine(DateTime timestamp, string lineText)
+        {
+            StringBuilder stringBuilder = new();
+            stringBuilder.Append(timestamp.ToString("yyyy-MM-dd HH:mm:ss:fff"));
+            stringBuilder.Append('\t');
+            stringBuilder.Append(lineText);
+            stringBuilder.Append('\t');
+            stringBuilder.Append(Environment.NewLine);
+            return stringBuilder;
+        }
+
+        public void StopWithoutFlush() => _exit = true;
+
+        public void StopWithFlush() => _quitWithFlush = true;
+
+        public void Write(string text) => _lines.Enqueue(new LogLine() { Text = text, Timestamp = DateTime.Now });
+
+
         private void MainLoop()
         {
             while (!_exit)
@@ -50,38 +68,10 @@
                     _logWriter.Write(BuildLogLine(logLine.Timestamp, logLine.LineText()).ToString());
                     _lines.TryDequeue(out _);
                 }
+
+                _exit = _exit || (_quitWithFlush == true && _lines.IsEmpty);
+                Thread.Sleep(50);
             }
-
-            _exit = _exit || (_quitWithFlush == true && _lines.IsEmpty);
-            Thread.Sleep(50);
-        }
-
-        private static StringBuilder BuildLogLine(DateTime timestamp, string lineText)
-        {
-            StringBuilder stringBuilder = new();
-            stringBuilder.Append(timestamp.ToString("yyyy-MM-dd HH:mm:ss:fff"));
-            stringBuilder.Append('\t');
-            stringBuilder.Append(lineText);
-            stringBuilder.Append('\t');
-            stringBuilder.Append(Environment.NewLine);
-            return stringBuilder;
-        }
-
-        public void StopWithoutFlush()
-        {
-            _exit = true;
-        }
-
-        public void StopWithFlush()
-        {
-            _quitWithFlush = true;
-        }
-
-        public void Write(string text)
-        {
-            _lines.Enqueue(new LogLine() { Text = text, Timestamp = DateTime.Now });
         }
     }
-
-
 }
