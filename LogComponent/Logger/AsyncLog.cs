@@ -53,51 +53,64 @@
             int exceptionCount = 0;
             while (!_exit)
             {
-                for (int i = 0; i < 5; i++)
-                {
-                    var hasLog = _lines.TryPeek(out var logLine);
-
-                    if (!hasLog)
-                    {
-                        break;
-                    }
-
-                    if (logLine == null)
-                    {
-                        // Prevent null reference exceptions
-                        _lines.TryDequeue(out _);
-                        Write("Found null log entry 😱");
-                        continue;
-                    }
-
-                    if (_exit)
-                    {
-                        break;
-                    }
-
-                    try
-                    {
-                        _logWriter.Write(BuildLogLine(logLine.Timestamp, logLine.LineText()).ToString());
-                        _lines.TryDequeue(out _);
-                        exceptionCount = 0;
-                    }
-                    catch (Exception ex)
-                    {
-                        exceptionCount++;
-                        if (exceptionCount > _maxConsecutiveExceptions)
-                        {
-                            StopWithoutFlush();
-                        }
-                        else
-                        {
-                            Write($"An {ex.GetType()} exception occurred; Message: {ex.Message}");
-                        }
-                    }
-                }
-
+                ProcessNextBatch(ref exceptionCount);
                 Thread.Sleep(50);
                 _exit = _exit || (_quitWithFlush == true && _lines.IsEmpty);
             }
+        }
+
+        private void ProcessNextBatch(ref int exceptionCount)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                var hasLog = _lines.TryPeek(out var logLine);
+
+                if (!hasLog)
+                {
+                    break;
+                }
+
+                if (!IsLogLineValid(logLine))
+                {
+                    continue;
+                }
+
+                if (_exit)
+                {
+                    break;
+                }
+
+                try
+                {
+                    _logWriter.Write(BuildLogLine(logLine.Timestamp, logLine.LineText()).ToString());
+                    _lines.TryDequeue(out _);
+                    exceptionCount = 0;
+                }
+                catch (Exception ex)
+                {
+                    exceptionCount++;
+                    if (exceptionCount > _maxConsecutiveExceptions)
+                    {
+                        StopWithoutFlush();
+                    }
+                    else
+                    {
+                        Write($"An {ex.GetType()} exception occurred; Message: {ex.Message}");
+                    }
+                }
+            }
+        }
+
+        private bool IsLogLineValid(LogLine? logLine)
+        {
+            if (logLine == null)
+            {
+                // Prevent null reference exceptions
+                _lines.TryDequeue(out _);
+                Write("Found null log entry 😱");
+                return false;
+            }
+            return true;
         }
     }
 }
