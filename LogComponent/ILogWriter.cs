@@ -1,5 +1,3 @@
-using System.IO;
-
 namespace LogComponent
 {
     public interface ILogWriter

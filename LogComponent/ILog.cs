@@ -1,7 +1,4 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-
-namespace LogComponent
+﻿namespace LogComponent
 {
     public interface ILog
     {

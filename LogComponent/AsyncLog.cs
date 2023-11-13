@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Concurrent;
-    using System.IO;
     using System.Text;
     using System.Threading;
 
@@ -13,9 +12,11 @@
         private bool _exit;
         private bool _quitWithFlush = false;
         private readonly ILogWriter _logWriter;
+        private readonly IClock _clock;
 
-        public AsyncLog(ILogWriter logWriter)
+        public AsyncLog(ILogWriter logWriter, IClock clock)
         {
+            _clock = clock;
             _logWriter = logWriter;
             _runThread = new Thread(MainLoop);
             _runThread.Start();
@@ -36,7 +37,7 @@
 
         public void StopWithFlush() => _quitWithFlush = true;
 
-        public void Write(string text) => _lines.Enqueue(new LogLine() { Text = text, Timestamp = DateTime.Now });
+        public void Write(string text) => _lines.Enqueue(new LogLine() { Text = text, Timestamp = _clock.CurrentTime });
 
 
         private void MainLoop()
