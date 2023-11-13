@@ -1,43 +1,49 @@
 using Microsoft.Extensions.Configuration;
 
-namespace Application
+namespace Application;
+
+using System;
+using System.Threading;
+using LogComponent.Clock;
+using LogComponent.Log;
+using LogComponent.LogWriter;
+
+public class MyService
 {
-    using System.Threading;
+    private readonly IConfiguration _configuration;
+    private readonly IClock _clock;
 
-    using LogComponent;
-
-    public class MyService
+    public MyService(IClock clock, IConfiguration configuration)
     {
-        private readonly IConfiguration _configuration;
-        private readonly IClock _clock;
+        _configuration = configuration;
+        _clock = clock;
+    }
 
-        public MyService(IClock clock, IConfiguration configuration)
+    public void Run()
+    {
+        var logFolder = _configuration.GetValue<string>(Constants.ConfigKeyLogFolder);
+
+        if (string.IsNullOrWhiteSpace(logFolder))
         {
-            _configuration = configuration;
-            _clock = clock;
+            throw new ArgumentNullException($"{Constants.ConfigKeyLogFolder} is not correctly configured");
         }
 
-        public void Run()
+        ILog logger = new AsyncLog(new FileLogWriter(_clock, logFolder), _clock);
+        for (int i = 0; i < 15; i++)
         {
-            var logFolder = _configuration.GetValue<string>("LogFolder");
-
-            ILog logger = new AsyncLog(new FileLogWriter(_clock, logFolder), _clock);
-            for (int i = 0; i < 15; i++)
-            {
-                logger.Write("Number with Flush: " + i.ToString());
-                Thread.Sleep(50);
-            }
-
-            logger.StopWithFlush();
-
-            ILog logger2 = new AsyncLog(new FileLogWriter(_clock, logFolder), _clock);
-            for (int i = 50; i > 0; i--)
-            {
-                logger2.Write("Number with No flush: " + i.ToString());
-                Thread.Sleep(20);
-            }
-
-            logger2.StopWithoutFlush();
+            logger.Write("Number with Flush: " + i.ToString());
+            Thread.Sleep(50);
         }
+
+        logger.StopWithFlush();
+
+        ILog logger2 = new AsyncLog(new FileLogWriter(_clock, logFolder), _clock);
+        for (int i = 50; i > 0; i--)
+        {
+            logger2.Write("Number with No flush: " + i.ToString());
+            Thread.Sleep(20);
+        }
+
+        logger2.StopWithoutFlush();
     }
 }

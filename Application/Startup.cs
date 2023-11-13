@@ -1,9 +1,11 @@
 using System;
 using System.IO;
-using LogComponent;
+using LogComponent.Clock;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
 namespace Application;
+
 public class Startup
 {
     public IConfiguration Configuration { get; }
@@ -15,11 +17,11 @@ public class Startup
 
     public void ConfigureServices(IServiceCollection services)
     {
-        var logFolder = Configuration.GetRequiredSection("LogFolder");
+        var logFolder = Configuration.GetRequiredSection(Constants.ConfigKeyLogFolder);
 
         if (logFolder.Value == null || !Path.IsPathFullyQualified(logFolder.Value))
         {
-            throw new InvalidOperationException("LogFolder is not correctly configured");
+            throw new InvalidOperationException($"{Constants.ConfigKeyLogFolder} is not correctly configured");
         }
 
         // Configure services here

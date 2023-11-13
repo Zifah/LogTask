@@ -1,44 +1,43 @@
 ﻿using System;
 using Microsoft.Extensions.Configuration;
 
-namespace Application
+namespace Application;
+
+using System.IO;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+class Program
 {
-    using System.IO;
-    using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Hosting;
-
-    class Program
+    static void Main(string[] args)
     {
-        static void Main(string[] args)
+        var host = new HostBuilder()
+                    .ConfigureHostConfiguration(configHost =>
+                                {
+                                    configHost.SetBasePath(Directory.GetCurrentDirectory());
+                                    configHost.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+                                })
+                    .ConfigureServices((hostContext, services) =>
+                    {
+                        new Startup(hostContext.Configuration).ConfigureServices(services);
+                    })
+                    .Build();
+
+        using (var serviceScope = host.Services.CreateScope())
         {
-            var host = new HostBuilder()
-                        .ConfigureHostConfiguration(configHost =>
-                                    {
-                                        configHost.SetBasePath(Directory.GetCurrentDirectory());
-                                        configHost.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-                                    })
-                        .ConfigureServices((hostContext, services) =>
-                        {
-                            new Startup(hostContext.Configuration).ConfigureServices(services);
-                        })
-                        .Build();
-
-            using (var serviceScope = host.Services.CreateScope())
+            var services = serviceScope.ServiceProvider;
+            try
             {
-                var services = serviceScope.ServiceProvider;
-                try
-                {
-                    var myService = services.GetRequiredService<MyService>();
-                    myService.Run();
-                }
-                catch (Exception ex)
-                {
-                    // Handle exceptions as needed
-                    Console.WriteLine($"Error: {ex.Message}");
-                }
+                var myService = services.GetRequiredService<MyService>();
+                myService.Run();
             }
-
-            host.Run();
+            catch (Exception ex)
+            {
+                // Handle exceptions as needed
+                Console.WriteLine($"Error: {ex.Message}");
+            }
         }
+
+        host.Run();
     }
 }
