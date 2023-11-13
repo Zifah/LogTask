@@ -10,10 +10,6 @@ namespace LogComponent
         private DateTime _curDate;
         private const string LogFolder = @"C:\LogTest";
         private string LogFilePath => Path.Combine(LogFolder, $"Log{_curDate:yyyyMMdd HHmmss fff}.log");
-
-        /// <summary>
-        /// Prevents <see cref="_currentWriter"> from being used for writing while it is being disposed
-        /// </summary>
         private static readonly object _lockObject = new();
         public FileLogWriter(IClock clock)
         {
