@@ -1,4 +1,4 @@
-﻿namespace LogTest
+﻿namespace LogComponent
 {
     using System;
     using System.Text;
@@ -61,7 +61,7 @@
         /// The Timestamp is initialized when the log is added. Th
         /// </summary>
         public virtual DateTime Timestamp { get; set; }
-  
+
 
         #endregion
     }
