@@ -10,7 +10,8 @@ namespace LogUsers
     {
         static void Main(string[] args)
         {
-            ILog logger = new AsyncLog(new FileLogWriter(new RealClock()));
+            var clock = new RealClock();
+            ILog logger = new AsyncLog(new FileLogWriter(clock), clock);
 
             for (int i = 0; i < 15; i++)
             {
@@ -20,7 +21,7 @@ namespace LogUsers
 
             logger.StopWithFlush();
 
-            ILog logger2 = new AsyncLog(new FileLogWriter(new RealClock()));
+            ILog logger2 = new AsyncLog(new FileLogWriter(clock), clock);
 
             for (int i = 50; i > 0; i--)
             {
