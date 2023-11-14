@@ -13,10 +13,10 @@ class Program
     {
         var host = new HostBuilder()
                     .ConfigureHostConfiguration(configHost =>
-                                {
-                                    configHost.SetBasePath(Directory.GetCurrentDirectory());
-                                    configHost.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-                                })
+                    {
+                        configHost.SetBasePath(Directory.GetCurrentDirectory());
+                        configHost.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+                    })
                     .ConfigureServices((hostContext, services) =>
                     {
                         new Startup(hostContext.Configuration).ConfigureServices(services);
@@ -27,7 +27,7 @@ class Program
         {
             var services = serviceScope.ServiceProvider;
             var myService = services.GetRequiredService<MyService>();
-            myService.Run();            
+            myService.Run();
         }
 
         host.Run();
