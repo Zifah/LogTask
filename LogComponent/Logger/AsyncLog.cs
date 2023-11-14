@@ -53,44 +53,31 @@
             int exceptionCount = 0;
             while (!_exit)
             {
-                ProcessNextBatch(ref exceptionCount);
-                Thread.Sleep(50);
+                WriteNextLog(ref exceptionCount);
                 _exit = _exit || (_quitWithFlush == true && _lines.IsEmpty);
             }
         }
 
-        private void ProcessNextBatch(ref int exceptionCount)
+        private void WriteNextLog(ref int exceptionCount)
         {
-            for (int i = 0; i < 5; i++)
+            var hasLog = _lines.TryPeek(out var logLine);
+
+            if (!hasLog || !IsLogLineValid(logLine) || _exit)
             {
-                var hasLog = _lines.TryPeek(out var logLine);
+                return;
+            }
 
-                if (!hasLog)
-                {
-                    break;
-                }
-
-                if (!IsLogLineValid(logLine))
-                {
-                    continue;
-                }
-
-                if (_exit)
-                {
-                    break;
-                }
-
-                try
-                {
-                    _logWriter.Write(BuildLogLine(logLine.Timestamp, logLine.LineText()).ToString());
-                    _lines.TryDequeue(out _);
-                    exceptionCount = 0;
-                }
-                catch (Exception ex)
-                {
-                    exceptionCount++;
-                    LogExceptionOrPreventOverflow(ex, exceptionCount);
-                }
+            try
+            {
+                // INTERVIEW NOTE: A clear improvement here would be to write in batches for better performance
+                _logWriter.Write(BuildLogLine(logLine.Timestamp, logLine.LineText()).ToString());
+                _lines.TryDequeue(out _);
+                exceptionCount = 0;
+            }
+            catch (Exception ex)
+            {
+                exceptionCount++;
+                LogExceptionOrPreventOverflow(ex, exceptionCount);
             }
         }
 
@@ -116,6 +103,11 @@
                 return false;
             }
             return true;
+        }
+
+        public bool IsBufferEmpty()
+        {
+            return _lines.IsEmpty;
         }
     }
 }

@@ -18,6 +18,10 @@ public interface ILog
     /// <param name="text">The text to written to the log</param>
     void Write(string text);
 
-
+    /// <summary>
+    /// Get the current state of the logger
+    /// </summary>
+    /// <returns>True if all pending logs have been written; false otherwise</returns>
+    bool IsBufferEmpty();
 }
 
