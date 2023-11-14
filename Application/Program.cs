@@ -26,16 +26,8 @@ class Program
         using (var serviceScope = host.Services.CreateScope())
         {
             var services = serviceScope.ServiceProvider;
-            try
-            {
-                var myService = services.GetRequiredService<MyService>();
-                myService.Run();
-            }
-            catch (Exception ex)
-            {
-                // Handle exceptions as needed
-                Console.WriteLine($"Error: {ex.Message}");
-            }
+            var myService = services.GetRequiredService<MyService>();
+            myService.Run();            
         }
 
         host.Run();
