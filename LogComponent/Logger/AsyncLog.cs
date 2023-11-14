@@ -18,6 +18,8 @@
         private readonly IClock _clock;
         private readonly int _maxConsecutiveExceptions;
 
+        private static readonly object _instantExitLock = new object();
+
         public AsyncLog(ILogWriter logWriter, IClock clock)
         {
             Require.NotNull(clock, nameof(clock));
@@ -42,7 +44,13 @@
             return stringBuilder;
         }
 
-        public void StopWithoutFlush() => _exit = true;
+        public void StopWithoutFlush() 
+        {
+            lock(_instantExitLock)
+            {
+                _exit = true;
+            }
+        }
 
         public void StopWithFlush() => _quitWithFlush = true;
 
@@ -53,8 +61,11 @@
             int exceptionCount = 0;
             while (!_exit)
             {
-                WriteNextLog(ref exceptionCount);
-                _exit = _exit || (_quitWithFlush == true && _lines.IsEmpty);
+                lock (_instantExitLock)
+                {
+                    WriteNextLog(ref exceptionCount);
+                    _exit = _exit || (_quitWithFlush == true && _lines.IsEmpty);
+                }
             }
         }
 
