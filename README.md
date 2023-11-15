@@ -16,7 +16,7 @@
 ## Bugfixes
 1. Dispose of File I/O handle after use
 2. Prevent LogComponent from crashing calling thread
-3. Prevent logging from happening under any condition when StopWithFlush() is called
+3. Prevent log writes from happening under any condition after `AsyncLog.StopWithoutFlush()` is called
 4. Synchronize the flags: `QuitWithFlush` and `Exit` to ensure expected exit behaviour
 
 ## Major Refactoring changes
