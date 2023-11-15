@@ -27,17 +27,18 @@ public class AsyncLog
         // Arrange
         _logWriterMock
             .Setup(x => x.Write(It.IsAny<string>()));
+        var expectedWriteCount = createdLogCount * 3;
 
         // Act
-        for (int i = 1; i <= createdLogCount; i++)
-        {
-            _asyncLog.Write($"{i}");
-        }
+        var task1 = Task.Run(() => LogNumbers(createdLogCount));
+        var task2 = Task.Run(() => LogNumbers(createdLogCount));
+        var task3 = Task.Run(() => LogNumbers(createdLogCount));
 
+        Task.WaitAll(task1, task2, task3);
         WaitForBufferEmpty();
 
         // Assert
-        _logWriterMock.Verify(x => x.Write(It.IsAny<string>()), Times.Exactly(createdLogCount));
+        _logWriterMock.Verify(x => x.Write(It.IsAny<string>()), Times.Exactly(expectedWriteCount));
     }
 
     [TestCase(340)]
@@ -52,26 +53,24 @@ public class AsyncLog
         var minExpectedWrites = createdLogCount;
         var maxExpectedWrites = createdLogCount + createdLogCount;
 
-        // Act
-        var logNumbers = () =>
-        {
-            for (int i = 1; i <= createdLogCount; i++)
-            {
-                _asyncLog.Write($"{i}");
-            }
-        };
-
-        logNumbers();
-        Task.Run(logNumbers);
+        LogNumbers(createdLogCount);
+        Task.Run(() => LogNumbers(createdLogCount));
         _asyncLog.StopWithFlush();
-
-        logNumbers();
+        LogNumbers(createdLogCount);
 
         Thread.Sleep(50); // Allow time for logger to write the second batch of logs
 
         // Assert
         _logWriterMock.Verify(x => x.Write(It.IsAny<string>()), 
             Times.Between(minExpectedWrites, maxExpectedWrites, Moq.Range.Inclusive));
+    }
+
+    private void LogNumbers(int createdLogCount)
+    {
+        for (int i = 1; i <= createdLogCount; i++)
+        {
+            _asyncLog.Write($"{i}");
+        }
     }
 
     [TestCase(340)]
