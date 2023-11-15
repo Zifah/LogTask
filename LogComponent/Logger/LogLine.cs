@@ -1,4 +1,4 @@
-﻿namespace LogComponent.Log;
+﻿namespace LogComponent.Logger;
 
 using System;
 using System.Text;

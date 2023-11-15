@@ -1,13 +1,13 @@
 using LogComponent.Clock;
-using LogComponent.Log;
 using LogComponent.LogWriter;
 using Moq;
+using Log = LogComponent.Logger;
 
-namespace LogComponent.Test;
+namespace LogComponent.Test.Logger;
 
-public class AsyncLogTests
+public class AsyncLog
 {
-    private AsyncLog _asyncLog;
+    private Log.AsyncLog _asyncLog;
     private Mock<IClock> _clockMock;
     private Mock<ILogWriter> _logWriterMock;
 
@@ -16,7 +16,7 @@ public class AsyncLogTests
     {
         _clockMock = new Mock<IClock>();
         _logWriterMock = new Mock<ILogWriter>();
-        _asyncLog = new AsyncLog(_logWriterMock.Object, _clockMock.Object);
+        _asyncLog = new Log.AsyncLog(_logWriterMock.Object, _clockMock.Object);
     }
 
     [TestCase(100)]
@@ -88,7 +88,7 @@ public class AsyncLogTests
         _logWriterMock
             .Setup(x => x.Write(It.IsAny<string>()))
             .Callback(() => { lastWriteTime = DateTime.Now; });
-        
+
 
         // Act
         for (int i = 1; i <= createdLogCount; i++)

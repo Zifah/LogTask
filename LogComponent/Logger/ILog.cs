@@ -1,4 +1,4 @@
-﻿namespace LogComponent.Log;
+﻿namespace LogComponent.Logger;
 
 public interface ILog
 {

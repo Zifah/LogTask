@@ -1,13 +1,12 @@
 using Microsoft.Extensions.Configuration;
 
-namespace Application;
-
 using System;
 using System.Threading;
 using LogComponent.Clock;
-using LogComponent.Log;
 using LogComponent.LogWriter;
+using LogComponent.Logger;
 
+namespace Application;
 public class MyService
 {
     private readonly IConfiguration _configuration;
