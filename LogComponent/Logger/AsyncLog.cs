@@ -89,14 +89,12 @@ public class AsyncLog : ILog
         int exceptionCount = 0;
         while (!Exit)
         {
-            lock (_exitLock)
+            WriteNextLog(ref exceptionCount);
+            if (!Exit && QuitWithFlush && IsBufferEmpty())
             {
-                WriteNextLog(ref exceptionCount);
-                if (!Exit && QuitWithFlush && IsBufferEmpty())
-                {
-                    StopWithoutFlush();
-                }
+                StopWithoutFlush();
             }
+
         }
     }
 
@@ -112,7 +110,13 @@ public class AsyncLog : ILog
         try
         {
             // INTERVIEW NOTE: A clear improvement here would be to write in batches for better performance
-            _logWriter.Write(BuildLogLine(logLine.Timestamp, logLine.LineText()).ToString());
+            lock (_exitLock)
+            {
+                if (!Exit)
+                {
+                    _logWriter.Write(BuildLogLine(logLine.Timestamp, logLine.LineText()).ToString());
+                }
+            }
             _lines.TryDequeue(out _);
             exceptionCount = 0;
         }

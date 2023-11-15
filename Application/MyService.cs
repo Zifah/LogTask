@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Configuration;
 
 using System;
-using System.Threading;
 using LogComponent.Clock;
 using LogComponent.LogWriter;
 using LogComponent.Logger;
@@ -31,7 +30,6 @@ public class MyService
         for (int i = 0; i < 15; i++)
         {
             logger.Write("Number with Flush: " + i.ToString());
-            Thread.Sleep(50);
         }
 
         logger.StopWithFlush();
@@ -40,7 +38,6 @@ public class MyService
         for (int i = 50; i > 0; i--)
         {
             logger2.Write("Number with No flush: " + i.ToString());
-            Thread.Sleep(20);
         }
 
         logger2.StopWithoutFlush();
