@@ -5,8 +5,8 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Threading;
 using LogComponent.Clock;
-using LogComponent.Helpers;
 using LogComponent.LogWriter;
+using Shared.Helpers;
 
 public class AsyncLog : ILog
 {

@@ -1,10 +1,8 @@
-using System;
-
-namespace LogComponent.Helpers;
+namespace Shared.Helpers;
 
 public static class Require
 {
-    internal static void NotNull<T>(T value, string paramName)
+    public static void NotNull<T>(T value, string paramName)
     {
         if (value == null)
         {

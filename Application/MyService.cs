@@ -4,6 +4,7 @@ using System;
 using LogComponent.Clock;
 using LogComponent.LogWriter;
 using LogComponent.Logger;
+using Shared.Helpers;
 
 namespace Application;
 public class MyService
@@ -13,6 +14,8 @@ public class MyService
 
     public MyService(IClock clock, IConfiguration configuration)
     {
+        Require.NotNull(clock, nameof(clock));
+        Require.NotNull(configuration, nameof(configuration));
         _configuration = configuration;
         _clock = clock;
     }

@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using LogComponent.Clock;
-using LogComponent.Helpers;
+using Shared.Helpers;
 
 namespace LogComponent.LogWriter;
 
