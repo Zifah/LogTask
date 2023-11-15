@@ -1,3 +1,9 @@
+# OUTPUT
+1. The code in the repo
+2. [Explanation of changes](#changes)
+3. [The Log Files](LogOutput)
+
+# CHANGES 
 ## General improvements
 1. Upgrade project to from **.NET framework 4.6** to **.NET 7**
 2. Fix the mismatch between the project and folder name for the `LogComponent`
