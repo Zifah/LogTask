@@ -21,7 +21,7 @@
 
 ## Major Refactoring changes
 1. Increase the compactness of methods and classes across the solution
-2. Reduced nesting levels in methods across the solution
+2. Reduce nesting levels in methods across the solution
 3. Use dependency injection for log-writing (`ILogWriter`) and time-fetching (`IClock`) functionalities
 
  ## Unit tests
