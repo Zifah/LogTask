@@ -1,9 +1,9 @@
 using LogComponent.Clock;
+using LogComponent.Log;
 using LogComponent.LogWriter;
 using Moq;
-using Log = LogComponent.Logger;
 
-namespace LogComponent.Test.Logger;
+namespace LogComponent.Test;
 
 public class AsyncLog
 {
@@ -34,44 +34,47 @@ public class AsyncLog
             _asyncLog.Write($"{i}");
         }
 
-        WaitForBufferEmpty();
+        while (!_asyncLog.IsBufferEmpty())
+        {
+            // Wait for writes to complete
+            Thread.Sleep(10);
+        }
 
         // Assert
         _logWriterMock.Verify(x => x.Write(It.IsAny<string>()), Times.Exactly(createdLogCount));
     }
 
-    [TestCase(340)]
-    [TestCase(1000)]
-    [TestCase(746)]
+    [TestCase(340, 1000)]
+    [TestCase(1000, 500)]
+    [TestCase(746, 20)]
     public void StopWithFlush_PreventsFurtherWritesOnceLogBufferCleared
-        (int createdLogCount)
+        (int createdLogCount, int unwrittenLogCount)
     {
         _logWriterMock
             .Setup(x => x.Write(It.IsAny<string>()));
 
-        var minExpectedWrites = createdLogCount;
-        var maxExpectedWrites = createdLogCount + createdLogCount;
-
         // Act
-        var logNumbers = () =>
+        for (int i = 1; i <= createdLogCount; i++)
         {
-            for (int i = 1; i <= createdLogCount; i++)
+            _asyncLog.Write($"{i}");
+            if (i == createdLogCount / 2)
             {
-                _asyncLog.Write($"{i}");
+                _asyncLog.StopWithFlush();
             }
-        };
+        }
 
-        logNumbers();
-        Task.Run(logNumbers);
-        _asyncLog.StopWithFlush();
+        WaitForBufferEmpty();
 
-        logNumbers();
+        for (int i = 1; i <= unwrittenLogCount; i++)
+        {
+            _asyncLog.Write($"{i}");
+        }
 
         Thread.Sleep(50); // Allow time for logger to write the second batch of logs
 
         // Assert
-        _logWriterMock.Verify(x => x.Write(It.IsAny<string>()), 
-            Times.Between(minExpectedWrites, maxExpectedWrites, Moq.Range.Inclusive));
+        _logWriterMock.Verify(x => x.Write(It.IsAny<string>()), Times.Exactly(createdLogCount));
+        Assert.That(_asyncLog.IsBufferEmpty(), Is.False);
     }
 
     [TestCase(340)]
@@ -81,7 +84,7 @@ public class AsyncLog
         (int createdLogCount)
     {
         // Arrange
-        DateTime cutoffTime = DateTime.Now, lastWriteTime = DateTime.Now;
+        DateTime cutoffTime = DateTime.Now, lanistWriteTime = DateTime.Now;
         _logWriterMock
             .Setup(x => x.Write(It.IsAny<string>()))
             .Callback(() => { lastWriteTime = DateTime.Now; });

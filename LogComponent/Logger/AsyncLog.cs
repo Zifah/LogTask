@@ -12,13 +12,11 @@ public class AsyncLog : ILog
 {
     private readonly Thread _runThread;
     private readonly ConcurrentQueue<LogLine> _lines;
-    private bool _exit;
-    private bool _quitWithFlush = false;
     private readonly ILogWriter _logWriter;
     private readonly IClock _clock;
     private readonly int _maxConsecutiveExceptions;
 
-    private static readonly object _instantExitLock = new object();
+    private static readonly object _exitLock = new object();
 
     public AsyncLog(ILogWriter logWriter, IClock clock)
     {
@@ -44,27 +42,57 @@ public class AsyncLog : ILog
         return stringBuilder;
     }
 
-    public void StopWithoutFlush()
+    private bool _exit;
+    private bool Exit
     {
-        lock (_instantExitLock)
+        get
         {
-            _exit = true;
+            return _exit;
+        }
+        set
+        {
+            lock (_exitLock)
+            {
+                _exit = true; // Prevent reversal of an exit
+            }
         }
     }
 
-    public void StopWithFlush() => _quitWithFlush = true;
+    private bool QuitWithFlush { get; set; }
 
-    public void Write(string text) => _lines.Enqueue(new LogLine() { Text = text, Timestamp = _clock.CurrentTime });
+    public void StopWithoutFlush()
+    {
+        Exit = true;
+    }
+
+    public void StopWithFlush()
+    {
+        QuitWithFlush = true;
+        while (!IsBufferEmpty())
+        {
+        }
+    }
+
+    public void Write(string text)
+    {
+        if (!QuitWithFlush)
+        {
+            _lines.Enqueue(new LogLine() { Text = text, Timestamp = _clock.CurrentTime });
+        }
+    }
 
     private void MainLoop()
     {
         int exceptionCount = 0;
-        while (!_exit)
+        while (!Exit)
         {
-            lock (_instantExitLock)
+            lock (_exitLock)
             {
                 WriteNextLog(ref exceptionCount);
-                _exit = _exit || _quitWithFlush == true && _lines.IsEmpty;
+                if (!Exit && QuitWithFlush && IsBufferEmpty())
+                {
+                    StopWithoutFlush();
+                }
             }
         }
     }
@@ -73,7 +101,7 @@ public class AsyncLog : ILog
     {
         var hasLog = _lines.TryPeek(out var logLine);
 
-        if (!hasLog || !IsLogLineValid(logLine) || _exit)
+        if (!hasLog || !IsLogLineValid(logLine) || Exit)
         {
             return;
         }
