@@ -89,6 +89,7 @@ public class AsyncLog : ILog
         int exceptionCount = 0;
         while (!Exit)
         {
+            // INTERVIEW NOTE: A clear improvement here would be to write in batches for better performance
             WriteNextLog(ref exceptionCount);
             if (!Exit && QuitWithFlush && IsBufferEmpty())
             {
@@ -109,7 +110,6 @@ public class AsyncLog : ILog
 
         try
         {
-            // INTERVIEW NOTE: A clear improvement here would be to write in batches for better performance
             lock (_exitLock)
             {
                 if (!Exit)

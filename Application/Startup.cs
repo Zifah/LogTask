@@ -24,7 +24,6 @@ public class Startup
             throw new InvalidOperationException($"{Constants.ConfigKeyLogFolder} is not correctly configured");
         }
 
-        // Configure services here
         services.AddSingleton(Configuration);
         services.AddTransient<MyService>();
         services.AddTransient<IClock, RealClock>();
