@@ -24,14 +24,13 @@ public class FileLogWriter : ILogWriter
             Directory.CreateDirectory(logFolder);
 
         _logFolder = logFolder;
-        InitializeLogFile();
     }
 
     private StreamWriter Writer
     {
         get
         {
-            EnsureFileRollOver();
+            InitializeLogFile();
             var writer = File.AppendText(LogFilePath);
             writer.AutoFlush = true;
             return writer;
@@ -45,6 +44,11 @@ public class FileLogWriter : ILogWriter
 
     private void InitializeLogFile()
     {
+        if (_clock.CurrentTime.Day > _curDate.Day)
+        {
+            _curDate = _clock.CurrentTime;
+        }
+
         if (!File.Exists(LogFilePath))
         {
             lock (_lockObject)
@@ -56,16 +60,5 @@ public class FileLogWriter : ILogWriter
                 }
             }
         }
-    }
-
-    private bool EnsureFileRollOver()
-    {
-        if (_clock.CurrentTime.Day > _curDate.Day)
-        {
-            _curDate = _clock.CurrentTime;
-            InitializeLogFile();
-            return true;
-        }
-        return false;
     }
 }
