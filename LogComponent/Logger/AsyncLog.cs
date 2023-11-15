@@ -17,7 +17,23 @@ public class AsyncLog : ILog
     private readonly int _maxConsecutiveExceptions;
 
     private static readonly object _exitLock = new object();
+    private bool _exit;
+    private bool Exit
+    {
+        get
+        {
+            return _exit;
+        }
+        set
+        {
+            lock (_exitLock)
+            {
+                _exit = true; // Prevent reversal of an exit
+            }
+        }
+    }
 
+    private bool QuitWithFlush { get; set; }
     public AsyncLog(ILogWriter logWriter, IClock clock)
     {
         Require.NotNull(clock, nameof(clock));
@@ -42,23 +58,13 @@ public class AsyncLog : ILog
         return stringBuilder;
     }
 
-    private bool _exit;
-    private bool Exit
+    public void Write(string text)
     {
-        get
+        if (!QuitWithFlush)
         {
-            return _exit;
-        }
-        set
-        {
-            lock (_exitLock)
-            {
-                _exit = true; // Prevent reversal of an exit
-            }
+            _lines.Enqueue(new LogLine() { Text = text, Timestamp = _clock.CurrentTime });
         }
     }
-
-    private bool QuitWithFlush { get; set; }
 
     public void StopWithoutFlush()
     {
@@ -73,12 +79,9 @@ public class AsyncLog : ILog
         }
     }
 
-    public void Write(string text)
+    public bool IsBufferEmpty()
     {
-        if (!QuitWithFlush)
-        {
-            _lines.Enqueue(new LogLine() { Text = text, Timestamp = _clock.CurrentTime });
-        }
+        return _lines.IsEmpty;
     }
 
     private void MainLoop()
@@ -142,10 +145,5 @@ public class AsyncLog : ILog
             return false;
         }
         return true;
-    }
-
-    public bool IsBufferEmpty()
-    {
-        return _lines.IsEmpty;
     }
 }
