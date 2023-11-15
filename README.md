@@ -10,7 +10,8 @@
 ## Bugfixes
 1. Dispose of File I/O handle after use
 2. Prevent LogComponent from crashing calling thread
-3. Synchronize the flags: `QuitWithFlush` and `Exit` to ensure expected exit behaviour
+3. Prevent logging from happening under any condition when StopWithFlush() is called
+4. Synchronize the flags: `QuitWithFlush` and `Exit` to ensure expected exit behaviour
 
 ## Major Refactoring changes
 1. Increase the compactness of methods and classes across the solution
